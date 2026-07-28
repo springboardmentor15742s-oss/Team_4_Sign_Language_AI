@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, profile
+from routers import auth, profile, dataset
 
 app = FastAPI(
     title="Sign Language Learning & Assessment Platform API",
-    description="Backend microservices API supporting User Auth, RBAC, Learner Profile Management, and Gesture Recognition",
+    description="Backend microservices API supporting User Auth, RBAC, Learner Profile Management, Dataset Integration, and Gesture Recognition",
     version="1.0.0"
 )
 
@@ -20,6 +20,7 @@ app.add_middleware(
 # Register Routers
 app.include_router(auth.router)
 app.include_router(profile.router)
+app.include_router(dataset.router)
 
 @app.get("/")
 def root():
