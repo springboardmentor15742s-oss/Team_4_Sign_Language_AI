@@ -203,3 +203,77 @@ This section outlines what details are read from or written to database tables d
 *   **Accuracy Thresholds**: If average accuracy falls below 60%, intermediate lessons are locked, and basic review exercises are suggested.
 *   **Milestone Skips**: If accuracy exceeds 90% with low response times, the system suggests skipping ahead to advanced blocks.
 *   **Mistake Review Lists**: Failed letters or words are logged and pushed to the top of the user's review dashboard.
+
+---
+
+## 9. Additional Detailed Workflows
+
+### 9.1 Workflow 1: Dataset Preprocessing & Integration Pipeline Workflow
+
+This workflow outlines the step-by-step pipeline used to prepare raw sign language video datasets for training and real-time inference within the CNN/LSTM classification model.
+
+```mermaid
+flowchart TD
+    subgraph Raw Dataset
+        A[Raw Video Dataset] --> B[Sort & Label Videos by Sign Category]
+    end
+
+    subgraph Video Processing
+        B --> C[FFmpeg Frame Extraction]
+        C -->|Extract Frames at 30 FPS| D[Image Resizing & Aspect Ratio Correction]
+        D --> E[Pixel Value Normalization [0, 1]]
+    end
+
+    subgraph Feature Extraction
+        E --> F[MediaPipe Landmark Detection]
+        F --> G[Extract 21 Hand Keypoints x, y, z]
+    end
+
+    subgraph Coordinate Preprocessing
+        G --> H[Translate Coordinates Relative to Wrist]
+        H --> I[Min-Max Feature Scaling]
+        I --> J[Sequence Padding / Truncation to Uniform Length T]
+    end
+
+    subgraph Model Input Generation
+        J --> K{Select Model Type}
+        K -->|Static Signs / Letters| L[Format for CNN Input tensor: batch_size, landmarks, coords]
+        K -->|Dynamic Signs / Words| M[Format for LSTM Input tensor: batch_size, sequence_len, landmarks*coords]
+    end
+```
+
+### 9.2 Workflow 2: Learner Profile Onboarding & Skill Progression Workflow
+
+This workflow describes the process of initializing a new user's profile, tracking their daily practice activity, and calculating their skill progression and mastery scores.
+
+```mermaid
+flowchart TD
+    subgraph User Onboarding
+        A[New User Registration] --> B[API Auth & Account Creation]
+        B --> C[Role Selection: Learner / Instructor / Trainer]
+        C -->|Learner| D[Level Assignment: Diagnostic Test / Self-Select]
+        D --> E[Select Daily Practice Goal: 10 / 15 / 30 mins]
+    end
+
+    subgraph Learning Activity & Tracking
+        E --> F[Initialize Learner Profile in DB]
+        F --> G[Access Personalized Lesson Path]
+        G --> H[Complete Camera Practice & Quizzes]
+        H --> I[Log Practice Duration, Accuracy, and Date]
+    end
+
+    subgraph Progress & Mastery Processing
+        I --> J[Calculate Current Daily Streak]
+        J --> K[Retrieve Last N Practice Scores]
+        K --> L[Calculate Weighted Skill Mastery Score]
+        L --> M{Mastery Score >= Threshold?}
+    end
+
+    subgraph Path Progression
+        M -->|Yes: Unlock Next Level| N[Update Unlocked Lessons & Award Badge]
+        M -->|No: Needs Review| O[Generate Mistake Review List & Suggest Revision]
+        N --> P[Render Updated Progress Charts on Dashboard]
+        O --> P
+    end
+```
+
