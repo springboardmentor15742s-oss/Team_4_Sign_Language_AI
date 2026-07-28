@@ -221,7 +221,7 @@ flowchart TD
     subgraph Video Processing
         B --> C[FFmpeg Frame Extraction]
         C -->|Extract Frames at 30 FPS| D[Image Resizing & Aspect Ratio Correction]
-        D --> E[Pixel Value Normalization [0, 1]]
+        D --> E["Pixel Value Normalization [0, 1]"]
     end
 
     subgraph Feature Extraction
@@ -237,8 +237,8 @@ flowchart TD
 
     subgraph Model Input Generation
         J --> K{Select Model Type}
-        K -->|Static Signs / Letters| L[Format for CNN Input tensor: batch_size, landmarks, coords]
-        K -->|Dynamic Signs / Words| M[Format for LSTM Input tensor: batch_size, sequence_len, landmarks*coords]
+        K -->|Static Signs / Letters| L["Format for CNN Input tensor: batch_size, landmarks, coords"]
+        K -->|Dynamic Signs / Words| M["Format for LSTM Input tensor: batch_size, sequence_len, landmarks*coords"]
     end
 ```
 
@@ -250,9 +250,9 @@ This workflow describes the process of initializing a new user's profile, tracki
 flowchart TD
     subgraph User Onboarding
         A[New User Registration] --> B[API Auth & Account Creation]
-        B --> C[Role Selection: Learner / Instructor / Trainer]
-        C -->|Learner| D[Level Assignment: Diagnostic Test / Self-Select]
-        D --> E[Select Daily Practice Goal: 10 / 15 / 30 mins]
+        B --> C["Role Selection: Learner / Instructor / Trainer"]
+        C -->|Learner| D["Level Assignment: Diagnostic Test / Self-Select"]
+        D --> E["Select Daily Practice Goal: 10 / 15 / 30 mins"]
     end
 
     subgraph Learning Activity & Tracking
@@ -266,7 +266,7 @@ flowchart TD
         I --> J[Calculate Current Daily Streak]
         J --> K[Retrieve Last N Practice Scores]
         K --> L[Calculate Weighted Skill Mastery Score]
-        L --> M{Mastery Score >= Threshold?}
+        L --> M{"Mastery Score >= Threshold?"}
     end
 
     subgraph Path Progression
@@ -276,4 +276,5 @@ flowchart TD
         O --> P
     end
 ```
+
 
