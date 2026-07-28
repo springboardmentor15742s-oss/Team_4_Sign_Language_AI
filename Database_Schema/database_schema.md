@@ -3,13 +3,14 @@
 ## AI-Powered Sign Language Learning & Assessment Platform
 
 ## Table 1 : Users 
-| Column Name |     Data Type     |           Description                   |
-|-------------|-------------------|-----------------------------------------|
-|   user_id   | INT (Primary Key) | Unique ID for each user                 |
-|    name     |   VARCHAR(100)    | Full name of the user                   |
-|    email    |   VARCHAR(150)    | Email address of the user               |
-|   password  |   VARCHAR(255)    | Stores the user's encrypted password    |
-|    role     |   VARCHAR(50)     | Defines the user's role in the platform |
+| Column Name       |     Data Type     |           Description                               |
+|-------------------|-------------------|-----------------------------------------------------|
+|   user_id         | INT (Primary Key) | Unique ID for each user                             |
+| full_name         |   VARCHAR(100)    | Full name of the user                               |
+|    email          |   VARCHAR(150)    | Email address of the user                           |
+|  hashed_password  |   VARCHAR(255)    | Stores the user's encrypted password                |
+|    role           |   VARCHAR(50)     | User role(Learner,Instructor,Trainer,Administrator) |
+| created_at        |   DATETIME        | Date and Time when the account was created          |
 
 
 ## Table 2 : Learner_Profile
@@ -20,6 +21,7 @@
 | learning_level     | VARCHAR(50)       | Current learning level (Beginner, Intermediate, Advanced) |
 | learning_goal      | VARCHAR(255)      | Goal set by the learner                                   |
 | preferred_language | VARCHAR(50)       | Preferred language for learning                           |
+| daily_target_mins  | INT               | Daily Target in mins                                      |
 | practice_history   | TEXT              | Stores the learner's practice records                     |
 | assessment_history | TEXT              | Stores previous assessment records                        |
 | progress_status    | VARCHAR(50)       | Current learning progress of the learner                  |
@@ -76,8 +78,45 @@
 | submitted_at | DATETIME          | Date and time when the feedback was submitted     |
 
 
+## Table 8 : Learning_Goals
+
+| Column Name | Data Type         |               Description                    |
+|-------------|-------------------|----------------------------------------------|
+| goal_id     | INT (Primary Key) | Unique ID for each learning goal             |
+| user_id     | INT (Foreign Key) | References the user in the Users table       |
+| goal_name   | VARCHAR(100)      | Learning goal selected by the learner        |
+
+
+## Table 9 : Practice_History
+
+| Column Name     | Data Type         |                Description                  |
+|-----------------|-------------------|---------------------------------------------|
+| practice_id     | INT (Primary Key) | Unique ID for each practice session         |
+| user_id         | INT (Foreign Key) | References the user in the Users table      |
+| sign_name       | VARCHAR(100)      | Name of the sign practiced                  |
+| accuracy_score  | DECIMAL(5,2)      | Accuracy score achieved                     |
+| duration_seconds| INT               | Practice duration in seconds                |
+| status          | VARCHAR(50)       | Practice status (Completed/Failed)          |
+
+
+## Table 10 : Skill_Mastery
+
+| Column Name      | Data Type         |            Description                      |
+|------------------|-------------------|---------------------------------------------|
+| mastery_id       | INT (Primary Key) | Unique ID for each mastery record           |
+| user_id          | INT (Foreign Key) | References the user in the Users table      |
+| sign_name        | VARCHAR(100)      | Name of the mastered sign                   |
+| accuracy_score   | DECIMAL(5,2)      | Accuracy score achieved                     |
+| duration_seconds | INT               | Time spent practicing                       |
+| status           | VARCHAR(50)       | Mastery status (Learning/Mastered)          |
+
+
 ## Database Relationships
+
 - Users → Learner_Profile (One-to-One)
+- Users → Learning_Goals (One-to-Many)
+- Users → Practice_History (One-to-Many)
+- Users → Skill_Mastery (One-to-Many)
 - Courses → Lessons (One-to-Many)
 - Learner_Profile → Assessments (One-to-Many)
 - Learner_Profile → Progress_Tracking (One-to-Many)
@@ -89,15 +128,6 @@
 
 ![ER Diagram](ER_Diagram.png)
 
-## Database Design Notes
-- Each table has a Primary Key to uniquely identify records.
-- Foreign Keys are used to establish relationships between tables.
-- The schema is normalized to reduce data redundancy.
-- Separate tables improve maintainability and scalability.
-- The design supports learner management, course management, assessments, progress tracking, and feedback.
-
-
 ## Conclusion
-The database design for the AI-Powered Sign Language Learning & Assessment Platform helps to store and manage all important information like users, courses, lessons, assessments, learner progress, and feedback.
-Primary Keys and Foreign Keys are used to connect the tables properly and keep the data accurate. The database structure is organized to avoid duplicate data and make the system easy to manage.
-This design provides a strong base for developing the platform and helps in adding future features like AI-based sign recognition and personalized learning.
+
+The updated database schema provides a well-organized structure for the AI-Powered Sign Language Learning & Assessment Platform. It supports user authentication, multiple user roles, learner profile management, learning goals, AI-based practice tracking, assessments, progress tracking, courses, lessons, and feedback. The use of Primary Keys and Foreign Keys ensures proper relationships between tables and maintains data accuracy. This design is scalable, easy to maintain, and provides a strong foundation for future development of the platform.
