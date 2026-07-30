@@ -1,11 +1,9 @@
 # Data Dictionary
 
-# Data Dictionary
-
 | Table Name            |                              Description                                      |
 |-----------------------|-------------------------------------------------------------------------------|
 | **Users**             | Stores authentication details and role information for all users (Learner, Instructor, Accessibility Trainer, Administrator). |
-| **Learner_Profile**   | Stores learner-specific information such as learning level, goals, preferred language, daily target, practice history, and progress. |
+| **Learner_Profile**   | Stores learner-specific information such as learning level, goals, preferred language, daily target, accessibility needs, practice history, and progress. |
 | **Courses**           | Contains details of available sign language courses offered on the platform. |
 | **Lessons**           | Stores individual lessons belonging to each course along with their content and order. |
 | **Assessments**       | Records learner assessment scores, completion dates, and assessment status. |

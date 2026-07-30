@@ -83,7 +83,7 @@
 | Column Name | Data Type         |               Description                    |
 |-------------|-------------------|----------------------------------------------|
 | goal_id     | INT (Primary Key) | Unique ID for each learning goal             |
-| user_id     | INT (Foreign Key) | References the user in the Users table       |
+| learner_id  | INT (Foreign Key) | References the user in the Users table       |
 | goal_name   | VARCHAR(100)      | Learning goal selected by the learner        |
 
 
@@ -92,7 +92,7 @@
 | Column Name     | Data Type         |                Description                  |
 |-----------------|-------------------|---------------------------------------------|
 | practice_id     | INT (Primary Key) | Unique ID for each practice session         |
-| user_id         | INT (Foreign Key) | References the user in the Users table      |
+| learner_id      | INT (Foreign Key) | References the user in the Users table      |
 | sign_name       | VARCHAR(100)      | Name of the sign practiced                  |
 | accuracy_score  | DECIMAL(5,2)      | Accuracy score achieved                     |
 | duration_seconds| INT               | Practice duration in seconds                |
@@ -104,7 +104,7 @@
 | Column Name      | Data Type         |            Description                      |
 |------------------|-------------------|---------------------------------------------|
 | mastery_id       | INT (Primary Key) | Unique ID for each mastery record           |
-| user_id          | INT (Foreign Key) | References the user in the Users table      |
+| learner_id       | INT (Foreign Key) | References the user in the Users table      |
 | sign_name        | VARCHAR(100)      | Name of the mastered sign                   |
 | accuracy_score   | DECIMAL(5,2)      | Accuracy score achieved                     |
 | duration_seconds | INT               | Time spent practicing                       |
@@ -114,9 +114,9 @@
 ## Database Relationships
 
 - Users → Learner_Profile (One-to-One)
-- Users → Learning_Goals (One-to-Many)
-- Users → Practice_History (One-to-Many)
-- Users → Skill_Mastery (One-to-Many)
+- Learner_Profile → Learning_Goals (One-to-Many)
+- Learner_Profile → Practice_History (One-to-Many)
+- Learner_Profile → Skill_Mastery (One-to-Many)
 - Courses → Lessons (One-to-Many)
 - Learner_Profile → Assessments (One-to-Many)
 - Learner_Profile → Progress_Tracking (One-to-Many)
