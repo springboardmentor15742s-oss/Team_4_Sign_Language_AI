@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth, ROLES } from '../context/AuthContext';
 import RoleBadge from './RoleBadge';
-import { Hand, User, ShieldCheck, ChevronDown, LogOut, Sparkles, LayoutDashboard, UserCheck, Award } from 'lucide-react';
+import { Hand, User, ShieldCheck, ChevronDown, LogOut, Sparkles, LayoutDashboard, UserCheck, Award, Camera, Database } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab }) {
   const { user, isAuthenticated, logout, switchRole } = useAuth();
@@ -64,6 +64,42 @@ export default function Navbar({ activeTab, setActiveTab }) {
           >
             <LayoutDashboard className="w-4 h-4" />
             Dashboard
+          </button>
+
+          <button
+            onClick={() => setActiveTab('practice')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+              activeTab === 'practice'
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            AI Practice
+          </button>
+
+          <button
+            onClick={() => setActiveTab('quiz')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+              activeTab === 'quiz'
+                ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            Speed Quiz
+          </button>
+
+          <button
+            onClick={() => setActiveTab('datasets')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+              activeTab === 'datasets'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Database className="w-4 h-4" />
+            Datasets
           </button>
         </nav>
 

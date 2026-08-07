@@ -5,6 +5,8 @@ import NotificationToast from './components/NotificationToast';
 import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
 import DashboardPage from './pages/DashboardPage';
+import PracticeSessionPage from './pages/PracticeSessionPage';
+import AssessmentQuizPage from './pages/AssessmentQuizPage';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState('auth');
@@ -19,6 +21,8 @@ function AppContent() {
         {activeTab === 'auth' && <AuthPage onLoginSuccess={() => setActiveTab('profile')} />}
         {activeTab === 'profile' && <ProfilePage />}
         {activeTab === 'dashboard' && <DashboardPage />}
+        {activeTab === 'practice' && <PracticeSessionPage />}
+        {activeTab === 'quiz' && <AssessmentQuizPage />}
       </main>
 
       {/* Footer */}
