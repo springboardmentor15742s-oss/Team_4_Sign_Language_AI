@@ -65,3 +65,7 @@ logs/
 *.pth
 *.onnx
 models/checkpoints/
+# Allow committed bootstrap gesture classifier for Milestone 2 Task 2
+!backend/app/ml/artifacts/
+!backend/app/ml/artifacts/.gitkeep
+!backend/app/ml/artifacts/gesture_classifier.joblib

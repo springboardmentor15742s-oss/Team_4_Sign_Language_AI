@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.database import init_db
-from app.routers import auth, profile
+from app.routers import ai_evaluate, auth, profile
 
 settings = get_settings()
 
@@ -11,7 +11,7 @@ app = FastAPI(
     title=settings.app_name,
     description=(
         "Backend API for the Sign Language Learning & Assessment Platform. "
-        "Supports authentication, RBAC, and learner profile management."
+        "Supports authentication, RBAC, learner profiles, and AI gesture evaluation."
     ),
     version="1.0.0",
 )
@@ -26,11 +26,16 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
+app.include_router(ai_evaluate.router, prefix="/api")
 
 
 @app.on_event("startup")
 def on_startup() -> None:
     init_db()
+    # Eager-load / bootstrap gesture classifier so first /ai/evaluate is fast
+    from app.ml.classifier import get_gesture_classifier
+
+    get_gesture_classifier()
 
 
 @app.get("/")

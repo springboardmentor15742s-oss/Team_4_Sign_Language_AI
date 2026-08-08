@@ -1,3 +1,3 @@
-from app.routers import auth, profile
+from app.routers import ai_evaluate, auth, profile
 
-__all__ = ["auth", "profile"]
+__all__ = ["auth", "profile", "ai_evaluate"]

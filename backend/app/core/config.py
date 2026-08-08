@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     database_url: str = "sqlite:///./signlang.db"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    datasets_root: str = "../datasets/raw"
+    gesture_model_path: str = "./app/ml/artifacts/gesture_classifier.joblib"
 
     @property
     def cors_origin_list(self) -> list[str]:
