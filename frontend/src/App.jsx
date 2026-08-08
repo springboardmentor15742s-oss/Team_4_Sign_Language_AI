@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
+import DatasetLibraryPage from './pages/DatasetLibraryPage'
 import ProfilePage from './pages/ProfilePage'
 import './index.css'
 
@@ -29,6 +30,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/datasets"
+              element={
+                <ProtectedRoute>
+                  <DatasetLibraryPage />
                 </ProtectedRoute>
               }
             />

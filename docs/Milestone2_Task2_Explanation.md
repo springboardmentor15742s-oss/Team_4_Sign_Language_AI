@@ -2,16 +2,17 @@
 
 **What this document covers**
 
-- Your assigned work for Milestone 2 Task 2
-- Files added on branch `chinmayee-week-2`
+- Your assigned work for Milestone 2
+- Files added on branch `chinmayee-week2-milestone2`
 - How `POST /api/ai/evaluate` works end-to-end
+- How the Dataset Library screen works
 - How to train / run / test
 - How this connects to teammates (Ankur, Prasanna, Pragathi)
 
 **Owner:** Chinmayee Badiger (Full-Stack Developer)  
-**Branch:** `chinmayee-week-2`  
+**Branch:** `chinmayee-week2-milestone2`  
 **Milestone:** 2 — Gesture Recognition & Assessment  
-**Assigned task:** Task 2 — AI Gesture Recognition Endpoint  
+**Assigned task:** AI Evaluation API Endpoint + Dataset Library Screen  
 
 Related Week 1 docs:
 - [`Dataset_Integration_Guide.md`](./Dataset_Integration_Guide.md)
@@ -19,7 +20,9 @@ Related Week 1 docs:
 
 ---
 
-## 1. Your assignment (Task 2)
+> The requested branch name was `chinmayee/week2-milestone2`, but the remote already has `origin/chinmayee`. Git cannot store both `chinmayee` and `chinmayee/...` refs at the same time. This work is therefore placed on `chinmayee-week2-milestone2`.
+
+## 1. Your assignment
 
 From the Milestone 2 plan, you own:
 
@@ -28,6 +31,8 @@ From the Milestone 2 plan, you own:
 3. **Dataset loader integration** — reads Sign Language MNIST + ASL Alphabet from `datasets/raw/`
 4. **Landmark classification model** — Random Forest (default) or KNN
 5. **JSON response** with predicted sign, accuracy %, correctness, and coaching corrections
+6. **Frontend Dataset Library Screen** with Sign Language MNIST, ASL Alphabet, and WLASL cards
+7. **Pragathi context handoff** for Task 4 database queries
 
 **Not your Milestone 2 scope (teammates):**
 
@@ -41,7 +46,7 @@ From the Milestone 2 plan, you own:
 
 ---
 
-## 2. Files added on `chinmayee-week-2`
+## 2. Files added on `chinmayee-week2-milestone2`
 
 ```text
 backend/app/routers/ai_evaluate.py      # POST /api/ai/evaluate (+ detailed + health)
@@ -55,6 +60,9 @@ backend/app/ml/
   artifacts/
     gesture_classifier.joblib           # Saved model (auto-created if missing)
 docs/Milestone2_Task2_Explanation.md    # This file
+docs/Pragathi_Task4_Context.md          # DB handoff context for Pragathi
+frontend/src/pages/DatasetLibraryPage.jsx # Dataset Library UI
+explanation.md                          # Short mentor/team explanation
 ```
 
 > Note: The assignment text said `backend/routers/ai_evaluate.py`. This repo already uses the package layout `backend/app/…`, so the router lives at `backend/app/routers/ai_evaluate.py` and is registered in `backend/app/main.py`.
@@ -92,11 +100,11 @@ POST /api/ai/evaluate
 
 ```json
 {
+  "sign_name": "A",
   "landmarks": [
     {"x": 0.51, "y": 0.72, "z": 0.0},
     {"x": 0.48, "y": 0.65, "z": -0.01}
   ],
-  "expected_sign": "A",
   "session_id": "practice-001",
   "source": "webcam"
 }
@@ -109,7 +117,7 @@ POST /api/ai/evaluate
 ```json
 {
   "landmarks_flat": [0.5, 0.7, 0.0, 0.48, 0.65, -0.01],
-  "expected_sign": "B"
+  "sign_name": "B"
 }
 ```
 
@@ -130,7 +138,32 @@ POST /api/ai/evaluate
 |--------|------|---------|
 | `POST` | `/api/ai/evaluate` | Main contract for Task 2 |
 | `POST` | `/api/ai/evaluate/detailed` | Same + model_type / confidence for debugging |
+| `GET` | `/api/ai/supported-signs` | Alphabet and dynamic signs for frontend/API docs |
 | `GET` | `/api/ai/health` | Model loaded? MNIST/ASL folders present? |
+
+---
+
+## 3.1 Dataset Library screen
+
+File: `frontend/src/pages/DatasetLibraryPage.jsx`
+
+Route: `/datasets`
+
+The screen shows the three datasets requested in Chinmayee's assignment:
+
+| Dataset | Category | Purpose |
+|---------|----------|---------|
+| Sign Language MNIST | Alphabet | Small static alphabet baseline |
+| ASL Alphabet | Alphabet | Main static hand-shape/image dataset |
+| WLASL | Dynamic Words | Future word-level dynamic sign recognition |
+
+Filter buttons:
+
+- `All`
+- `Alphabet`
+- `Dynamic Words`
+
+The navigation bar includes a `Datasets` tab for logged-in users.
 
 ---
 
@@ -218,7 +251,7 @@ Use Swagger → **AI Gesture Recognition** → `POST /api/ai/evaluate`.
 ### Ankur (Task 1) should send
 
 - MediaPipe Hands landmarks each frame (or throttled, e.g. 5–10 FPS)
-- Optional `expected_sign` during practice / quiz
+- `sign_name` during practice / quiz
 - Optional `session_id` so Pragathi/Ankur can later log Task 4 rows
 
 ### Use your response for UI
@@ -232,19 +265,27 @@ Use Swagger → **AI Gesture Recognition** → `POST /api/ai/evaluate`.
 Keep OpenAPI field names aligned: `predicted_sign`, `accuracy_percentage`, `is_correct`, `corrections`.  
 Detailed route is available if scoring schemas need `confidence_top` / `model_type`.
 
+`GET /api/ai/supported-signs` is ready for the supported-signs documentation.
+
 ### Pragathi / Task 4
 
 This endpoint **does not write to the DB** (out of Task 2 scope). After evaluate, the practice flow should insert into `Practice_History` / update `Skill_Mastery` using the JSON result.
+
+See `docs/Pragathi_Task4_Context.md` for exact fields and suggested table mapping.
 
 ---
 
 ## 9. Definition of done (your Task 2)
 
 - [x] `POST /api/ai/evaluate` implemented under `backend/app/routers/ai_evaluate.py`
+- [x] Accepts preferred `sign_name` field plus landmarks
+- [x] `GET /api/ai/supported-signs` implemented
 - [x] Landmark feature extractor implemented
 - [x] Dataset loaders for MNIST + ASL paths integrated
 - [x] Random Forest / KNN training + inference path
 - [x] Response matches required JSON shape
+- [x] Dataset Library frontend page implemented
+- [x] Pragathi context file created
 - [x] Explanation doc on the branch
 - [ ] (Optional follow-up) Retrain with `--from-datasets` after downloading ASL/MNIST locally
 - [ ] (Optional) Install `mediapipe` for real ASL landmark mining
@@ -253,8 +294,8 @@ This endpoint **does not write to the DB** (out of Task 2 scope). After evaluate
 
 ## 10. What you should say in standup / PR
 
-> Implemented Milestone 2 Task 2 on `chinmayee-week-2`: FastAPI `POST /api/ai/evaluate` with MediaPipe landmark feature extraction, MNIST/ASL dataset loaders, and a Random Forest classifier. Returns `predicted_sign`, `accuracy_percentage`, `is_correct`, and `corrections` for the live camera UI. Includes training CLI and this explanation doc.
+> Implemented Chinmayee's Milestone 2 work on `chinmayee-week2-milestone2`: FastAPI `POST /api/ai/evaluate` accepts `sign_name` and MediaPipe landmarks, extracts landmark features, runs a Random Forest classifier, and returns `predicted_sign`, `accuracy_percentage`, `is_correct`, and `corrections`. Also added `GET /api/ai/supported-signs`, the Dataset Library page, and Pragathi's database handoff context file.
 
 ---
 
-*Branch: `chinmayee-week-2` · Module owner: Chinmayee Badiger*
+*Branch: `chinmayee-week2-milestone2` · Module owner: Chinmayee Badiger*

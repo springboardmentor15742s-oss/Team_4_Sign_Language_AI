@@ -21,23 +21,30 @@ class EvaluateRequest(BaseModel):
         default=None,
         description="Optional flat 63-float MediaPipe landmark vector",
     )
+    sign_name: str | None = Field(
+        default=None,
+        description="Target sign selected by learner; alias for expected_sign",
+        max_length=32,
+    )
     expected_sign: str | None = Field(
         default=None,
-        description="Target sign for practice/quiz (sets is_correct)",
+        description="Target sign for practice/quiz (sets is_correct); sign_name is preferred for UI",
         max_length=32,
     )
     session_id: str | None = Field(default=None, max_length=64)
     source: Literal["webcam", "upload", "dataset", "test"] = "webcam"
 
-    @field_validator("expected_sign")
+    @field_validator("sign_name", "expected_sign")
     @classmethod
-    def normalize_expected(cls, v: str | None) -> str | None:
+    def normalize_sign(cls, v: str | None) -> str | None:
         return v.strip().upper() if v else v
 
     @model_validator(mode="after")
     def require_landmarks(self) -> EvaluateRequest:
         if self.landmarks is None and self.landmarks_flat is None:
             raise ValueError("Provide landmarks or landmarks_flat")
+        if self.expected_sign is None and self.sign_name is not None:
+            self.expected_sign = self.sign_name
         return self
 
 
@@ -53,5 +60,6 @@ class EvaluateResponseDetailed(EvaluateResponse):
 
     confidence_top: float | None = None
     model_type: str | None = None
+    sign_name: str | None = None
     expected_sign: str | None = None
     session_id: str | None = None

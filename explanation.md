@@ -19,6 +19,7 @@ This supports Ankur's live camera UI, Prasanna's API contract, and later databas
 - Added main endpoint: `POST /api/ai/evaluate`
 - Added debug endpoint: `POST /api/ai/evaluate/detailed`
 - Added health endpoint: `GET /api/ai/health`
+- Added supported signs endpoint: `GET /api/ai/supported-signs`
 - Registered the AI router in `backend/app/main.py`
 - Added Pydantic request/response schemas in `backend/app/schemas/ai_evaluate.py`
 - Added landmark feature extraction in `backend/app/ml/features.py`
@@ -27,10 +28,13 @@ This supports Ankur's live camera UI, Prasanna's API contract, and later databas
 - Added training/bootstrap helpers in `backend/app/ml/train_model.py`
 - Added dataset loader integration in `backend/app/ml/dataset_loader.py`
 - Added a saved bootstrap model artifact at `backend/app/ml/artifacts/gesture_classifier.joblib`
+- Added frontend Dataset Library page: `frontend/src/pages/DatasetLibraryPage.jsx`
+- Added Dataset navigation route: `/datasets`
+- Added Pragathi handoff file: `docs/Pragathi_Task4_Context.md`
 
 ## How The Endpoint Works
 
-The frontend sends 21 MediaPipe hand landmarks to the backend.
+The frontend sends the selected `sign_name` and 21 MediaPipe hand landmarks to the backend.
 
 The backend then:
 
@@ -65,11 +69,13 @@ The model can run even before large datasets are downloaded because it includes 
 
 ## Branch
 
-All generated Task 2 work is on:
+Generated Task 2 work is on:
 
 ```text
-chinmayee-week-2
+chinmayee-week2-milestone2
 ```
+
+The requested branch name `chinmayee/week2-milestone2` cannot be pushed while `origin/chinmayee` already exists, because Git treats `/` as a nested ref path.
 
 ## How To Run
 

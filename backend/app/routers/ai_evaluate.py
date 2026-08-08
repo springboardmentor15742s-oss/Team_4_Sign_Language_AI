@@ -16,6 +16,9 @@ from app.schemas.ai_evaluate import EvaluateRequest, EvaluateResponse, EvaluateR
 
 router = APIRouter(prefix="/ai", tags=["AI Gesture Recognition"])
 
+ALPHABET_SIGNS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+DYNAMIC_SIGNS = ["HELLO", "THANK YOU", "YES", "NO", "PLEASE", "SORRY"]
+
 
 def _resolve_landmarks(payload: EvaluateRequest):
     if payload.landmarks_flat is not None:
@@ -79,9 +82,20 @@ def evaluate_gesture_detailed(payload: EvaluateRequest) -> EvaluateResponseDetai
         **base.model_dump(),
         confidence_top=result.get("confidence_top"),
         model_type=result.get("model_type"),
+        sign_name=payload.sign_name,
         expected_sign=payload.expected_sign,
         session_id=payload.session_id,
     )
+
+
+@router.get("/supported-signs", summary="List signs supported by the practice API")
+def supported_signs():
+    return {
+        "alphabet": ALPHABET_SIGNS,
+        "dynamic_words": DYNAMIC_SIGNS,
+        "all": ALPHABET_SIGNS + DYNAMIC_SIGNS,
+        "note": "The current landmark classifier is optimized for alphabet signs; dynamic words are exposed for UI planning and later sequence-model integration.",
+    }
 
 
 @router.get("/health", summary="AI module + dataset availability")
