@@ -8,16 +8,16 @@
 ```mermaid
 erDiagram
     Users ||--o| Learner_Profiles : "1:1 profile"
-    Users ||--o| Courses : "instructs"
-    Learner_Profiles ||--o| Practice_History : "logs"
-    Learner_Profiles ||--o| Skill_Mastery : "tracks"
-    Learner_Profiles ||--o| Quiz_Scores : "completes"
-    Learner_Profiles ||--o| Certificates : "earns"
-    Learner_Profiles ||--o| AI_Practice_Feedback : "receives"
-    Courses ||--o| Lessons : "contains"
-    Courses ||--o| Assessments : "evaluates"
-    Assessments ||--o| Quiz_Scores : "generates"
-    Courses ||--o| Certificates : "awards"
+    Users ||--o{ Courses : "instructs"
+    Learner_Profiles ||--o{ Practice_History : "logs"
+    Learner_Profiles ||--o{ Skill_Mastery : "tracks"
+    Learner_Profiles ||--o{ Quiz_Scores : "completes"
+    Learner_Profiles ||--o{ Certificates : "earns"
+    Learner_Profiles ||--o{ AI_Practice_Feedback : "receives"
+    Courses ||--o{ Lessons : "contains"
+    Courses ||--o{ Assessments : "evaluates"
+    Assessments ||--o{ Quiz_Scores : "generates"
+    Courses ||--o{ Certificates : "awards"
 
     Users {
         string user_id PK
