@@ -67,7 +67,7 @@ class SignLanguageDatasetPipeline:
         arr = np.array(raw_pixels, dtype=np.float32).reshape(28, 28, 1)
         return arr / 255.0
 
-    def generate_dataset_summary_report(() -> Dict:
+    def generate_dataset_summary_report(self) -> Dict:
         """Returns structured JSON summary of all integrated sign language datasets."""
         return {
             "total_datasets": len(DATASET_CONFIGS),
