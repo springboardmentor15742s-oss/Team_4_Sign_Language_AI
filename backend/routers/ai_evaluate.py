@@ -1,4 +1,4 @@
-﻿"""
+"""
 SignLearn AI -- AI Evaluate & Real Capture Router (111-Feature Spatial & Kinetic)
 POST /api/ai/evaluate
 POST /api/ai/record-capture
@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Union
 
-router = APIRouter(prefix="/api/ai", tags=["AI Evaluate"])
+router = APIRouter(prefix="/ai", tags=["AI Evaluate"])
 
 BASE      = Path(__file__).parent.parent
 REPO_ROOT = BASE.parent
