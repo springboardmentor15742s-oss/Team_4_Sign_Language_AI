@@ -3,7 +3,8 @@
   "ml_confidence_threshold": 0.6,
   "geometric_weight": 0.3,
   "ml_weight": 0.7,
-  "samples_per_sign": 700,
+  "samples_per_sign": 400,
   "noise_std": 0.015,
-  "scale_variance": 0.1
+  "scale_variance": 0.08,
+  "feature_dim": 111
 }
