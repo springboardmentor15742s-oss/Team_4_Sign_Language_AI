@@ -1,4 +1,4 @@
-# SignLearn AI -- ML Model Training & Diagnostic Report
+﻿# SignLearn AI -- ML Model Training & Diagnostic Report
 **Date:** 2026-09-11 13:33
 **Milestone:** Milestone 4 Final Production Optimization
 **Target Signs:** All 60 ASL Signs (26 Alphabet, 25 Words, 9 Two-Handed Gestures)
@@ -153,47 +153,57 @@ All models trained on 19,200 samples (320 per sign) and evaluated on 4,800 held-
 
 ---
 
-## 6. Real-World Validation (MediaPipe Webcam Captures)
+## 6. Validation Tiers & Performance Integrity
 
-> [!IMPORTANT]
-> **Synthetic Test Accuracy vs Real-World Webcam Accuracy**:
-> - **Synthetic Held-Out Test Accuracy**: **93.38%** (evaluates self-consistency under synthetic noise)
-> - **Real-World Webcam Validation Accuracy**: **76.00%** (evaluates 150 live captures across 3 human subjects with camera tilt, human span variance & ambient sensor noise)
+> [!WARNING]
+> **Data Integrity Statement**:
+> Real-world human webcam validation has **NOT YET BEEN PERFORMED**.
+> Any previous claims of "76% real-world accuracy" based on generated subject profiles were synthetic simulations and have been completely removed.
+> The system status is transparently reported across the three distinct tiers below.
 
-### Subject Breakdown
-| Subject / Recording Profile | Test Captures | Correct | Accuracy | Environmental Conditions |
-|---|---|---|---|---|
-| Subject 1 (Ankur - Large hand span, 60cm distance) | 50 | 39 | **78.0%** | Large hand span, ~60cm webcam distance |
-| Subject 2 (Pragathi - Smaller hand span, 50cm distance) | 50 | 38 | **76.0%** | Compact hand span, ~50cm distance |
-| Subject 3 (Chinmayee - Mid hand span, diagonal webcam) | 50 | 37 | **74.0%** | Medium span, diagonal laptop angle |
-
-### Benchmark Sign Breakdown (Real-World)
-| Sign | Category | Real-World Accuracy | Captures Tested | Typical Failure Cause |
-|---|---|---|---|---|
-| **A** | Alphabet | **86.7%** | 15 | Fist tilt near webcam boundary |
-| **B** | Alphabet | **66.7%** | 15 | Thumb partially untucked during transition |
-| **C** | Alphabet | **100.0%** | 15 | Hand angle slightly turned towards camera |
-| **D** | Alphabet | **60.0%** | 15 | Thumb tip slip from middle finger |
-| **L** | Alphabet | **86.7%** | 15 | Index tilt angle exceeding 20 degrees |
-| **V** | Alphabet | **20.0%** | 15 | Incomplete finger separation under low lighting |
-| **Y** | Alphabet | **100.0%** | 15 | Pinky occultation behind palm plane |
-| **HELLO** | Word | **100.0%** | 15 | Incomplete wave travel distance |
-| **THANK_YOU** | Word | **40.0%** | 15 | Forward motion abbreviated by fast signer |
-| **PLEASE** | Word | **100.0%** | 15 | Chest circle radius compressed |
-
-### Top Real-World Discrepancies
-| Ground Truth Sign | Predicted Sign | Confidence | Subject | Analysis |
-|---|---|---|---|---|
-| A | T | 51.4% | 1 | Non-ideal finger posture during rapid sign transition |
-| B | F | 87.3% | 1 | Non-ideal finger posture during rapid sign transition |
-| D | WHEN | 80.1% | 1 | Non-ideal finger posture during rapid sign transition |
-| D | WHEN | 100.0% | 1 | Non-ideal finger posture during rapid sign transition |
-| L | A | 99.6% | 1 | Non-ideal finger posture during rapid sign transition |
-| V | PEACE | 50.4% | 1 | Non-ideal finger posture during rapid sign transition |
-| V | PEACE | 50.1% | 1 | Non-ideal finger posture during rapid sign transition |
-| V | PEACE | 51.3% | 1 | Non-ideal finger posture during rapid sign transition |
-
-### Key Takeaway for Production Deployment
-Synthetic test accuracy (93.38%) demonstrates model capacity and decision boundary separation. Real-world validation (88.7%) proves robust generalization across diverse signers, distances, and lighting conditions without catastrophic domain shift.
+### Tier Summary
+| Tier | Description | Accuracy | Dataset / Sample Size | Source | Status |
+|---|---|---|---|---|---|
+| **Tier (a)** | **Synthetic Held-Out Test Set** | **93.38%** | 4,800 samples (80 / sign) | `ml/train_classifier.py` | **VERIFIED & TRUSTWORTHY** |
+| **Tier (b)** | **Synthetic Stress Test (Camera Tilt)** | **78.75% – 92.29%** | 1,440 samples (24 / sign) | `ml/synthetic_stress_test.py` | **VERIFIED (SIMULATION)** |
+| **Tier (c)** | **Real-World Live Webcam Captures** | **NOT YET MEASURED** | 0 genuine captures | `ml/real_captures/` | **PENDING LIVE RECORDING** |
 
 ---
+
+### Tier (a): Synthetic Held-Out Test Set (93.38%)
+Evaluates the mathematical capacity of the 111-feature space and the trained MLP classifier on 4,800 held-out samples:
+- **Test Accuracy:** 93.38% (vs 36.33% baseline)
+- **3-Fold CV Accuracy:** 92.92% ± 0.13%
+- **Prototype Collisions:** 0 pairs under 0.15 distance (100% resolved)
+- **Status:** Verified and fully reproducible via `python ml/train_classifier.py`.
+
+---
+
+### Tier (b): Synthetic Perturbation Stress Test (78.75% – 92.29%)
+Evaluates model degradation under simulated environmental noise, camera roll angle, and scale variations (generated via `ml/synthetic_stress_test.py`):
+- **Mild Simulated Tilt (±3° roll, standard noise):** **92.29%** (443 / 480)
+- **Moderate Camera Angle (±7° roll, elevated noise):** **84.38%** (405 / 480)
+- **High Perturbation Stress (±12° roll, severe sensor noise):** **78.75%** (378 / 480)
+- **Status:** Verified simulation test. Demonstrates graceful degradation under angle rotation, but remains a synthetic proxy.
+
+---
+
+### Tier (c): Real-World Webcam Validation (Pending Human Recording)
+Real human webcam validation requires actual team members sitting in front of the camera and recording physical ASL attempts. Synthetic hand models, however detailed, cannot simulate:
+- Ambient room lighting and back-light shadows
+- Sensor noise, web-cam motion blur, and exposure compression
+- Individual human anatomical hand variances (finger thickness, joint flexibility, palm span)
+- Human signing cadence and transition habits
+
+#### Real-Data Capture Protocol
+1. **Tooling:** The backend endpoint `POST /api/ai/record-capture` saves incoming live MediaPipe landmark arrays directly into `ml/real_captures/<sign>_<subject>_<trial>.json`.
+2. **Target Benchmark Signs:**
+   - Easy / High-Distinction: `B`, `L`, `V`, `Y`
+   - Previously-Colliding Pairs: `A` vs `N`, `U` vs `V`, `HELLO` vs `NICE`, `PLEASE` vs `WHAT`
+3. **Participants:** 2–3 team members recording 5–10 genuine attempts per sign.
+4. **Evaluation Tool:** `python ml/validate_real_data.py` reads exclusively from `ml/real_captures/` (with zero synthetic generation code) and will compute honest per-sign and per-subject accuracy.
+5. **Current Directory Status:** `ml/real_captures/` is initialized and currently empty (0 real captures). Real accuracy is marked as an **open action item**.
+
+---
+
+*Report updated with strict data integrity standards.*

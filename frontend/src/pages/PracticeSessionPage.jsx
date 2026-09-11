@@ -1,4 +1,4 @@
-﻿import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Hand, CheckCircle2, XCircle, BookOpen, Activity, Users, Sun, Lightbulb, RotateCcw, Zap } from "lucide-react";
 
 const T = { bg:"#F8FAFC",card:"#FFFFFF",border:"#E2E8F0",primary:"#0284C7",orange:"#F97316",violet:"#7C3AED",emerald:"#059669",red:"#E11D48",amber:"#D97706",text:"#0F172A",muted:"#64748B",soft:"#F1F5F9" };
@@ -451,6 +451,10 @@ export default function PracticeSessionPage() {
   const [log,setLog]=useState([]);
   const [showGuide,setShowGuide]=useState(true);
   const [freeMode,setFreeMode]=useState(false);
+  const latestLMRef=useRef(null);
+  const [recorderSubject,setRecorderSubject]=useState("Ankur");
+  const [isRecording,setIsRecording]=useState(false);
+  const [captureFeedback,setCaptureFeedback]=useState(null);
   const signs=SIGN_CATEGORIES[category];
   const info=SIGN_INFO[targetSign]||{hands:1,type:"static",desc:""};
 
@@ -472,6 +476,7 @@ export default function PracticeSessionPage() {
     setLighting(checkLighting(multiH));
     setHCount(multiLM.length);
     setHLabels(multiH.map(h=>h.label));
+    if(multiLM.length>0&&multiLM[0]){latestLMRef.current=multiLM[0].map(p=>[p.x,p.y,p.z]);}
     histRef.current.push(multiLM.map(h=>h));
     if(histRef.current.length>FRAME_HIST) histRef.current.shift();
     multiLM.forEach((lms,hi)=>{
@@ -529,9 +534,45 @@ export default function PracticeSessionPage() {
     }
   },[status,freeMode]);
 
-  const go=(s)=>{setTarget(s);setPred(null);setStatus("WAITING");setAcc(0);histRef.current=[];};
+  const go=(s)=>{setTarget(s);setPred(null);setStatus("WAITING");setAcc(0);histRef.current=[];setCaptureFeedback(null);};
   const next=()=>{const i=signs.indexOf(targetSign);go(signs[(i+1)%signs.length]);};
   const prev=()=>{const i=signs.indexOf(targetSign);go(signs[(i-1+signs.length)%signs.length]);};
+
+  const handleRecordCapture=async()=>{
+    if(!latestLMRef.current||latestLMRef.current.length!==21){
+      alert("Please hold your hand in front of the camera first!");
+      return;
+    }
+    setIsRecording(true);
+    setCaptureFeedback("Saving live landmark capture...");
+    try{
+      const isDyn=info.type==="dynamic";
+      let payloadLandmarks=latestLMRef.current;
+      if(isDyn&&histRef.current.length>=4){
+        payloadLandmarks=histRef.current.slice(-8).map(frame=>(frame[0]||latestLMRef.current).map(p=>[p.x,p.y,p.z]));
+      }
+      const res=await fetch("http://localhost:8000/api/ai/record-capture",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          landmarks:payloadLandmarks,
+          target_sign:targetSign,
+          subject:recorderSubject
+        })
+      });
+      const data=await res.json();
+      if(res.ok){
+        setCaptureFeedback(`✅ Saved genuine webcam capture: ${data.filename} (Total real captures: ${data.total_real_captures})`);
+      }else{
+        setCaptureFeedback(`❌ Capture failed: ${data.detail||"Error"}`);
+      }
+    }catch(err){
+      setCaptureFeedback(`❌ Server connection failed: ${err.message}`);
+    }finally{
+      setIsRecording(false);
+    }
+  };
+
   const sBg=status==="CORRECT"?"#059669":status==="DETECTING"?"#D97706":"#475569";
   const freeBg=pred?"linear-gradient(135deg,#7C3AED,#0284C7)":"#475569";
 
@@ -656,6 +697,55 @@ export default function PracticeSessionPage() {
                     {!freeMode&&(status==="CORRECT"?<CheckCircle2 size={32} color={T.emerald} style={{flexShrink:0}}/>:<XCircle size={32} color="#F43F5E" style={{flexShrink:0}}/>)}
                     {freeMode&&<div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#7C3AED,#0284C7)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Zap size={18} color="white"/></div>}
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Real Webcam Benchmark Recording Bar */}
+            <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:"#059669"}}/>
+                  <span style={{fontSize:12,fontWeight:700,color:T.text}}>Real-World Benchmark Recorder</span>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:999,background:"#EFF6FF",color:T.primary,border:"1px solid #BFDBFE"}}>Tier (c) Ground Truth</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <label style={{fontSize:11,fontWeight:600,color:T.muted}}>Subject:</label>
+                  <select
+                    value={recorderSubject}
+                    onChange={e=>setRecorderSubject(e.target.value)}
+                    style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${T.border}`,background:T.soft,fontSize:11,fontWeight:700,color:T.text,cursor:"pointer"}}
+                  >
+                    <option value="Ankur">Ankur</option>
+                    <option value="Pragathi">Pragathi</option>
+                    <option value="Chinmayee">Chinmayee</option>
+                  </select>
+                  <button
+                    onClick={handleRecordCapture}
+                    disabled={isRecording}
+                    style={{
+                      display:"flex",
+                      alignItems:"center",
+                      gap:6,
+                      padding:"6px 14px",
+                      borderRadius:9,
+                      border:"none",
+                      background:isRecording?"#94A3B8":"linear-gradient(135deg,#E11D48,#BE123C)",
+                      color:"#fff",
+                      fontSize:12,
+                      fontWeight:700,
+                      cursor:isRecording?"not-allowed":"pointer",
+                      boxShadow:"0 2px 8px rgba(225,29,72,0.25)"
+                    }}
+                  >
+                    <span style={{width:7,height:7,borderRadius:"50%",background:"#fff",display:"inline-block"}}/>
+                    {isRecording?"Capturing...":`Record Capture for "${targetSign}"`}
+                  </button>
+                </div>
+              </div>
+              {captureFeedback&&(
+                <div style={{fontSize:11,fontWeight:600,color:captureFeedback.startsWith("✅")?"#059669":"#E11D48",background:captureFeedback.startsWith("✅")?"#ECFDF5":"#FFF1F2",padding:"6px 10px",borderRadius:8,border:`1px solid ${captureFeedback.startsWith("✅")?"#A7F3D0":"#FECDD3"}`}}>
+                  {captureFeedback}
                 </div>
               )}
             </div>
