@@ -1,225 +1,185 @@
+﻿"""
+SignLearn AI -- AI Evaluate Router (Enhanced with ML + Ensemble)
+POST /api/ai/evaluate
 """
-Milestone 2 Task 2 — AI Gesture Recognition router endpoint.
-POST /ai/evaluate
-"""
 
-from __future__ import annotations
+import os, json, pickle, math, random
+import numpy as np
+from pathlib import Path
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional
 
-import math
-from typing import List, Dict, Any
-from fastapi import APIRouter, HTTPException, status
+router = APIRouter(prefix="/api/ai", tags=["AI Evaluate"])
 
-try:
-    from backend.schemas.ai_evaluate import EvaluateRequest, EvaluateResponse, EvaluateResponseDetailed
-except ImportError:
-    from ..schemas.ai_evaluate import EvaluateRequest, EvaluateResponse, EvaluateResponseDetailed
+BASE      = Path(__file__).parent.parent
+_cfg_path = BASE / "ml_config.json"
+_pkl_path = BASE / "models" / "sign_classifier.pkl"
 
-router = APIRouter(prefix="/ai", tags=["AI Gesture Recognition"])
+def _load_config():
+    if _cfg_path.exists():
+        with open(_cfg_path) as f:
+            return json.load(f)
+    return {"pass_threshold":0.75,"ml_confidence_threshold":0.60,
+            "geometric_weight":0.30,"ml_weight":0.70}
 
-ALPHABET_SIGNS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-DYNAMIC_SIGNS = ["HELLO", "THANK YOU", "YES", "NO", "PLEASE", "SORRY"]
+def _load_bundle():
+    if _pkl_path.exists():
+        with open(_pkl_path,"rb") as f:
+            return pickle.load(f)
+    return None
 
-def _dist(p1, p2):
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
+_CONFIG       = _load_config()
+_BUNDLE       = _load_bundle()
+_ML_AVAILABLE = _BUNDLE is not None
+print(f"[ai_evaluate] ML model: {'LOADED' if _ML_AVAILABLE else 'NOT FOUND - geometric fallback active'}")
 
-def analyze_hand_landmarks(landmarks_flat: List[float], target_sign: str) -> Dict[str, Any]:
-    """
-    Perform 3D geometric distance and joint angle analysis on 21 MediaPipe hand landmarks.
-    Landmarks array length: 63 floats (21 points * (x, y, z)).
-    """
-    target = target_sign.upper().replace(" ", "_")
+TIP      = [4, 8,  12, 16, 20]
+PIP      = [3, 7,  11, 15, 19]
+MCP      = [2, 6,  10, 14, 18]
+BASE_IDX = [1, 5,  9,  13, 17]
 
-    # Check if landmarks array is missing or dummy (all zeroes / flat 0.5)
-    if not landmarks_flat or len(landmarks_flat) < 63 or all(abs(v - 0.5) < 0.001 for v in landmarks_flat[:10]):
-        return {
-            "predicted_sign": "UNKNOWN",
-            "accuracy_percentage": 25.0,
-            "is_correct": False,
-            "corrections": [
-                "No hand detected in camera frame.",
-                "Position your full hand clearly in front of the camera.",
-                "Ensure good lighting and keep your hand inside the frame."
-            ]
-        }
+class EvaluateRequest(BaseModel):
+    landmarks:   List[List[float]]
+    target_sign: str
+    hand:        Optional[str] = "right"
 
-    # Extract 21 points
-    pts = []
-    for i in range(0, 63, 3):
-        pts.append((landmarks_flat[i], landmarks_flat[i+1], landmarks_flat[i+2]))
+class EvaluateResponse(BaseModel):
+    predicted_sign: str
+    confidence:     float
+    is_correct:     bool
+    feedback:       str
+    source:         str
 
-    wrist = pts[0]
-    thumb_tip = pts[4]
-    index_knuckle = pts[5]
-    index_tip = pts[8]
-    middle_knuckle = pts[9]
-    middle_tip = pts[12]
-    ring_knuckle = pts[13]
-    ring_tip = pts[16]
-    pinky_knuckle = pts[17]
-    pinky_tip = pts[20]
+def _dist(a, b):
+    return math.sqrt(sum((x-y)**2 for x,y in zip(a,b)))
 
-    # Calculate tip-to-wrist vs knuckle-to-wrist distances
-    index_dist = _dist(index_tip, wrist)
-    index_knuckle_dist = _dist(index_knuckle, wrist)
-    
-    middle_dist = _dist(middle_tip, wrist)
-    middle_knuckle_dist = _dist(middle_knuckle, wrist)
-    
-    ring_dist = _dist(ring_tip, wrist)
-    ring_knuckle_dist = _dist(ring_knuckle, wrist)
-    
-    pinky_dist = _dist(pinky_tip, wrist)
-    pinky_knuckle_dist = _dist(pinky_knuckle, wrist)
+def _is_extended(lm, tip_i, pip_i):
+    return _dist(lm[0], lm[tip_i]) > _dist(lm[0], lm[pip_i]) * 1.15
 
-    # Determine if fingers are extended (open) or curled (fist)
-    index_extended = index_dist > index_knuckle_dist * 1.15
-    middle_extended = middle_dist > middle_knuckle_dist * 1.15
-    ring_extended = ring_dist > ring_knuckle_dist * 1.15
-    pinky_extended = pinky_dist > pinky_knuckle_dist * 1.15
+def _geo_predict(lm, target):
+    ext = [_is_extended(lm, TIP[i], PIP[i]) for i in range(5)]
+    th, idx, mid, rng, pnk = ext
+    RULES = {
+        "A":  not idx and not mid and not rng and not pnk,
+        "B":  not th and idx and mid and rng and pnk,
+        "C":  not idx and not mid and not rng and not pnk and not th,
+        "D":  idx and not mid and not rng and not pnk,
+        "E":  not idx and not mid and not rng and not pnk and not th,
+        "F":  not th and not idx and mid and rng and pnk,
+        "G":  th and idx and not mid and not rng and not pnk,
+        "H":  not th and idx and mid and not rng and not pnk,
+        "I":  not th and not idx and not mid and not rng and pnk,
+        "J":  not th and not idx and not mid and not rng and pnk,
+        "K":  th and idx and mid and not rng and not pnk,
+        "L":  th and idx and not mid and not rng and not pnk,
+        "M":  not th and not idx and not mid and not rng and not pnk,
+        "N":  not th and not idx and not mid and not rng and not pnk,
+        "O":  not idx and not mid and not rng and not pnk,
+        "R":  not th and idx and mid and not rng and not pnk,
+        "S":  not th and not idx and not mid and not rng and not pnk,
+        "U":  not th and idx and mid and not rng and not pnk,
+        "V":  not th and idx and mid and not rng and not pnk,
+        "W":  not th and idx and mid and rng and not pnk,
+        "X":  not th and idx and not mid and not rng and not pnk,
+        "Y":  th and not idx and not mid and not rng and pnk,
+        "HELLO":    idx and mid and rng and pnk,
+        "THANK_YOU":idx and mid and rng and pnk,
+        "PLEASE":   idx and mid and rng and pnk,
+        "YES":      not idx and not mid and not rng and not pnk,
+        "NO":       not th and idx and mid and not rng and not pnk,
+        "HELP":     th and not idx and not mid and not rng and not pnk,
+        "LOVE":     not idx and not mid and not rng and not pnk,
+        "SORRY":    not idx and not mid and not rng and not pnk,
+        "GOOD":     idx and mid and rng and pnk,
+        "STOP":     idx and mid and rng and pnk,
+        "WATER":    not th and idx and mid and rng and not pnk,
+        "NAMASTE":  idx and mid and rng and pnk,
+        "PEACE":    not th and idx and mid and not rng and not pnk,
+    }
+    matched = RULES.get(target.upper(), False)
+    if matched:
+        return target.upper(), 83.0
+    for sign, rule in RULES.items():
+        if rule:
+            return sign, 55.0
+    return "UNKNOWN", 12.0
 
-    extended_count = sum([index_extended, middle_extended, ring_extended, pinky_extended])
-    index_thumb_dist = _dist(index_tip, thumb_tip)
+def _extract_features(lm_list):
+    lm = np.array(lm_list, dtype=np.float32)
+    raw = lm.flatten()
+    wrist = lm[0]
+    extras = []
+    for tip_i, pip_i in zip(TIP, PIP):
+        d_tip = np.linalg.norm(lm[tip_i]-wrist)+1e-6
+        d_pip = np.linalg.norm(lm[pip_i]-wrist)+1e-6
+        extras.append(d_tip/d_pip)
+    tip_vecs = [lm[t]-lm[b] for t,b in zip(TIP, BASE_IDX)]
+    for ai in range(4):
+        u,v = tip_vecs[ai], tip_vecs[ai+1]
+        cos_a = np.dot(u,v)/(np.linalg.norm(u)*np.linalg.norm(v)+1e-6)
+        extras.append(float(np.clip(cos_a,-1.0,1.0)))
+    v1 = lm[MCP[1]]-wrist; v2 = lm[MCP[4]]-wrist
+    normal = np.cross(v1,v2)
+    extras.extend((normal/(np.linalg.norm(normal)+1e-6)).tolist())
+    tips = [lm[t] for t in TIP]
+    for a in range(5):
+        for b in range(a+1,5):
+            extras.append(float(np.linalg.norm(tips[a]-tips[b])))
+    return np.array(list(raw)+extras, dtype=np.float32).reshape(1,-1)
 
-    # KEY FIX: thumb spread check — dist from thumb tip to index MCP knuckle
-    # Sign B: thumb TUCKED across palm  → small thumb_spread_dist
-    # HELLO:  thumb SPREAD OUT wide     → large thumb_spread_dist
-    thumb_spread_dist = _dist(thumb_tip, index_knuckle)
-    thumb_is_spread = thumb_spread_dist > 0.14
+PASS_MSG = ["Great job! Sign detected correctly.",
+            "Excellent! Keep it up.", "Perfect sign shape!"]
+FAIL_MSG = ["Try adjusting your finger positions.",
+            "Check the finger extension carefully.",
+            "Keep your hand steady and retry."]
 
-    # Precise Gesture Classification — ordered most-specific to least
-    # Sign F (OK): index-thumb pinch + middle/ring/pinky up
-    if index_thumb_dist < 0.07 and middle_extended and ring_extended and pinky_extended:
-        predicted = "F"
-    # All 4 fingers fully extended
-    elif index_extended and middle_extended and ring_extended and pinky_extended:
-        # HELLO = open palm with thumb spread wide
-        # B     = 4 fingers straight up, thumb tucked across palm
-        predicted = "HELLO" if thumb_is_spread else "B"
-    # Only index finger up → Sign D (pointing)
-    elif index_extended and not middle_extended and not ring_extended and not pinky_extended:
-        predicted = "D"
-    # All 4 curled → Sign A (fist)
-    elif extended_count == 0:
-        predicted = "A"
-    # 2–3 fingers extended
-    elif extended_count >= 2:
-        predicted = "HELLO"
-    # Single non-index finger raised
-    else:
-        predicted = "C"
+def _fb(correct, conf):
+    msg = random.choice(PASS_MSG if correct else FAIL_MSG)
+    if conf < 60:
+        msg += " (Low confidence -- ensure good lighting.)"
+    return msg
 
+@router.post("/evaluate", response_model=EvaluateResponse)
+async def evaluate_sign(req: EvaluateRequest):
+    if len(req.landmarks) != 21:
+        raise HTTPException(400, f"Expected 21 landmarks, got {len(req.landmarks)}")
+    lm     = req.landmarks
+    target = req.target_sign.upper().strip()
+    thr    = _CONFIG.get("pass_threshold", 0.75) * 100
+    ml_thr = _CONFIG.get("ml_confidence_threshold", 0.60) * 100
+    ml_w   = _CONFIG.get("ml_weight", 0.70)
+    geo_w  = _CONFIG.get("geometric_weight", 0.30)
 
-    # Normalize target sign string for comparison
-    clean_target = "HELLO" if target in ["HELLO", "HI"] else "THANK_YOU" if target in ["THANK_YOU", "THANK YOU"] else target
+    geo_sign, geo_conf = _geo_predict(lm, target)
 
-    is_correct = (predicted == clean_target)
+    if not _ML_AVAILABLE:
+        ok = (geo_sign == target) and geo_conf >= thr
+        return EvaluateResponse(predicted_sign=geo_sign,
+            confidence=round(geo_conf,1), is_correct=ok,
+            feedback=_fb(ok, geo_conf), source="geometric")
+    try:
+        feats  = _extract_features(lm)
+        scaled = _BUNDLE["scaler"].transform(feats)
+        proba  = _BUNDLE["model"].predict_proba(scaled)[0]
+        ci     = int(np.argmax(proba))
+        ml_conf = float(proba[ci]) * 100.0
+        ml_sign = _BUNDLE["label_encoder"].inverse_transform([ci])[0]
 
-    if is_correct:
-        # High accuracy score for correct pose
-        base_acc = 92.0 + (hash(target + str(len(landmarks_flat))) % 60) / 10.0
-        accuracy = round(min(98.5, base_acc), 1)
-        corrections = [
-            f"Hand gesture matches target sign '{target}' accurately ({accuracy}% confidence).",
-            "Wrist angle and 21 landmark finger joint coordinates optimal.",
-            "Real-time MediaPipe 3D spatial alignment validated."
-        ]
-    else:
-        # Low accuracy score for incorrect pose
-        base_acc = 32.0 + (hash(target + str(len(landmarks_flat))) % 150) / 10.0
-        accuracy = round(min(54.0, max(28.0, base_acc)), 1)
-
-        if target == "A" and predicted != "A":
-            corrections = [
-                f"Detected open/extended pose ('{predicted}') instead of Sign 'A'.",
-                "Curl index, middle, ring, and pinky fingers tightly into your palm to form a fist.",
-                "Rest your thumb vertically alongside the outer edge of your index finger."
-            ]
-        elif target == "B" and predicted != "B":
-            corrections = [
-                f"Detected closed/curled pose ('{predicted}') instead of Sign 'B'.",
-                "Extend all 4 fingers (index, middle, ring, pinky) straight UP together.",
-                "Tuck your thumb across your palm."
-            ]
-        elif target == "D" and predicted != "D":
-            corrections = [
-                f"Detected pose '{predicted}' instead of Sign 'D'.",
-                "Point only your index finger straight UP.",
-                "Touch thumb tip to your middle finger to form a loop."
-            ]
-        elif target == "F" and predicted != "F":
-            corrections = [
-                f"Detected pose '{predicted}' instead of Sign 'F'.",
-                "Touch your index finger to your thumb tip to form an 'OK' circle.",
-                "Keep middle, ring, and pinky fingers extended straight UP."
-            ]
+        if ml_conf >= ml_thr:
+            ens_conf = ml_w*ml_conf + geo_w*geo_conf
+            pred = ml_sign; src = "ensemble"
         else:
-            corrections = [
-                f"Detected gesture '{predicted}' instead of expected '{target}'.",
-                f"Adjust finger angles and curvature to match standard '{target}' pose.",
-                "Ensure full hand is clearly visible facing the camera."
-            ]
+            ens_conf = 0.5*ml_conf + 0.5*geo_conf
+            pred = geo_sign if geo_conf > ml_conf else ml_sign
+            src  = "geometric_tiebreak"
 
-    return {
-        "predicted_sign": predicted,
-        "accuracy_percentage": accuracy,
-        "is_correct": is_correct,
-        "corrections": corrections
-    }
-
-@router.post(
-    "/evaluate",
-    response_model=EvaluateResponse,
-    summary="Evaluate hand landmarks and predict sign gesture",
-)
-def evaluate_gesture(payload: EvaluateRequest) -> EvaluateResponse:
-    target = payload.target_sign or payload.expected_sign or payload.sign_name or "A"
-
-    landmarks_flat = payload.landmarks_flat or []
-    if not landmarks_flat and payload.landmarks:
-        landmarks_flat = []
-        for p in payload.landmarks:
-            landmarks_flat.extend([p.x, p.y, p.z])
-
-    result = analyze_hand_landmarks(landmarks_flat, target)
-
-    return EvaluateResponse(
-        predicted_sign=result["predicted_sign"],
-        accuracy_percentage=result["accuracy_percentage"],
-        is_correct=result["is_correct"],
-        corrections=result["corrections"]
-    )
-
-@router.post(
-    "/evaluate/detailed",
-    response_model=EvaluateResponseDetailed,
-    summary="Evaluate gesture (detailed debug payload)",
-)
-def evaluate_gesture_detailed(payload: EvaluateRequest) -> EvaluateResponseDetailed:
-    base = evaluate_gesture(payload)
-    return EvaluateResponseDetailed(
-        **base.model_dump(),
-        confidence_top=base.accuracy_percentage / 100.0,
-        model_type="MediaPipe 21-Landmark Classifier",
-        sign_name=payload.sign_name or payload.target_sign,
-        expected_sign=payload.expected_sign or payload.target_sign,
-        session_id=payload.session_id,
-    )
-
-@router.get("/supported-signs", summary="List signs supported by the practice API")
-def supported_signs():
-    return {
-        "alphabet": ALPHABET_SIGNS,
-        "dynamic_words": DYNAMIC_SIGNS,
-        "all": ALPHABET_SIGNS + DYNAMIC_SIGNS,
-        "note": "The landmark classifier supports alphabet signs and common dynamic word phrases.",
-    }
-
-@router.get("/health", summary="AI module + dataset availability")
-def ai_module_health():
-    return {
-        "status": "ok",
-        "module": "ai-evaluate",
-        "model_loaded": True,
-        "model_type": "MediaPipe 21-Landmark Geometric Classifier",
-        "datasets": ["Sign Language MNIST", "ASL Alphabet", "WLASL"],
-    }
+        ok = (pred == target) and ens_conf >= thr
+        return EvaluateResponse(predicted_sign=pred,
+            confidence=round(ens_conf,1), is_correct=ok,
+            feedback=_fb(ok, ens_conf), source=src)
+    except Exception:
+        ok = (geo_sign == target) and geo_conf >= thr
+        return EvaluateResponse(predicted_sign=geo_sign,
+            confidence=round(geo_conf,1), is_correct=ok,
+            feedback=_fb(ok, geo_conf), source="geometric_fallback")
