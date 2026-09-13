@@ -16,15 +16,43 @@ import InstructorDashboardPage from './pages/InstructorDashboardPage';
 const PROTECTED_TABS = ['dashboard','practice','quiz','profile','courses','leaderboard','history','instructor'];
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState('auth');
   const { isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState(() => isAuthenticated ? 'dashboard' : 'auth');
+
+  // Handle cross-page SPA navigation events
+  useEffect(() => {
+    const handler = (e) => {
+      const { tab, subTab } = e.detail || {};
+      if (tab && PROTECTED_TABS.includes(tab)) {
+        setActiveTab(tab);
+        if (subTab) {
+          try { localStorage.setItem("sl_profile_tab", subTab); } catch {}
+          window.dispatchEvent(new CustomEvent("app-subtab", { detail: { subTab } }));
+        }
+      }
+    };
+    window.addEventListener("app-navigate", handler);
+    return () => window.removeEventListener("app-navigate", handler);
+  }, []);
 
   // If not authenticated and trying to access a protected tab, push back to auth
   useEffect(() => {
     if (!isAuthenticated && PROTECTED_TABS.includes(activeTab)) {
       setActiveTab('auth');
+    } else if (isAuthenticated && activeTab === 'auth') {
+      setActiveTab('dashboard');
     }
   }, [isAuthenticated, activeTab]);
+
+  const navigateTo = (tab, subTab) => {
+    if (PROTECTED_TABS.includes(tab)) {
+      setActiveTab(tab);
+      if (subTab) {
+        try { localStorage.setItem("sl_profile_tab", subTab); } catch {}
+        window.dispatchEvent(new CustomEvent("app-subtab", { detail: { subTab } }));
+      }
+    }
+  };
 
   // After login, redirect to dashboard
   const handleLoginSuccess = () => setActiveTab('dashboard');
@@ -48,8 +76,8 @@ function AppContent() {
             )}
             {activeTab === 'practice'    && <PracticeSessionPage />}
             {activeTab === 'quiz'        && <AssessmentQuizPage />}
-            {activeTab === 'profile'     && <ProfilePage />}
-            {activeTab === 'courses'     && <CoursesPage />}
+            {activeTab === 'profile'     && <ProfilePage onNavigate={navigateTo} />}
+            {activeTab === 'courses'     && <CoursesPage onNavigate={navigateTo} />}
             {activeTab === 'leaderboard' && <LeaderboardPage />}
             {activeTab === 'history'     && <PracticeHistoryPage />}
             {activeTab === 'instructor'  && <InstructorDashboardPage />}

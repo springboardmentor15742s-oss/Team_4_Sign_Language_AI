@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { BookOpen, Play, ChevronDown, ChevronUp, Clock, CheckCircle2, X, ExternalLink, Lock, Sparkles, Users, Star } from "lucide-react";
+import { BookOpen, Play, ChevronDown, ChevronUp, Clock, CheckCircle2, X, ExternalLink, Lock, Sparkles, Users, Star, GraduationCap } from "lucide-react";
+import CertModal from "../components/CertModal";
 
 const T = { bg:"#F8FAFC",card:"#FFFFFF",border:"#E2E8F0",primary:"#0284C7",orange:"#F97316",violet:"#7C3AED",emerald:"#059669",amber:"#D97706",text:"#0F172A",muted:"#64748B",soft:"#F1F5F9" };
 
@@ -217,7 +218,8 @@ function CertBanner({ course, onClose, onView }) {
   );
 }
 
-export default function CoursesPage() {
+export default function CoursesPage({ onNavigate }) {
+  const [viewCert, setViewCert] = useState(null);
   const [filter,      setFilter]      = useState("All");
   const [expanded,    setExpanded]    = useState(null);
   const [enrolled,    setEnrolled]    = useState(()=>new Set(loadLS("sl_enrolled",["c1"])));
@@ -292,10 +294,24 @@ export default function CoursesPage() {
     <div style={{background:T.bg,minHeight:"100vh",padding:"28px 0",
       backgroundImage:"radial-gradient(#CBD5E1 1px,transparent 1px)",backgroundSize:"28px 28px"}}>
       {modal&&<VideoModal lesson={modal.lesson} course={modal.course} onClose={()=>setModal(null)}/>}
+      {viewCert&&<CertModal cert={viewCert} userName="Ankur Biswal" onClose={()=>setViewCert(null)}/>}
       {certBanner&&(
         <CertBanner course={certBanner}
           onClose={()=>setCertBanner(null)}
-          onView={()=>{ setCertBanner(null); window.location.href="/profile"; }}
+          onView={()=>{
+            const c = certBanner;
+            setCertBanner(null);
+            setViewCert({
+              courseId: c.id,
+              title: c.title,
+              level: c.level,
+              color: c.color,
+              instructor: c.instructor,
+              issuedAt: new Date().toISOString(),
+              hrs: c.hrs,
+              lessons: c.items?.length || 8
+            });
+          }}
         />
       )}
 
@@ -487,16 +503,42 @@ export default function CoursesPage() {
 
                   {/* Certificate shortcut — shows when course is 100% done */}
                   {isEnrolled && pct===100 && (
-                    <button onClick={()=>window.location.href="/profile"}
-                      style={{width:"100%",padding:"9px",borderRadius:13,border:"none",
-                        background:"linear-gradient(135deg,#D97706,#F59E0B)",
-                        color:"white",fontSize:12,fontWeight:800,cursor:"pointer",
-                        display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                        boxShadow:"0 4px 14px rgba(217,119,6,0.45)",
-                        marginBottom:isExpanded?14:0,
-                        animation:"gradientShift 4s ease infinite",backgroundSize:"200% 200%"}}>
-                      &#x1F393; View &amp; Download Certificate
-                    </button>
+                    <div style={{display:"flex",gap:8,marginBottom:isExpanded?14:0,marginTop:8}}>
+                      <button onClick={()=>{
+                        setViewCert({
+                          courseId: c.id,
+                          title: c.title,
+                          level: c.level,
+                          color: c.color,
+                          instructor: c.instructor,
+                          issuedAt: new Date().toISOString(),
+                          hrs: c.hrs,
+                          lessons: c.items.length
+                        });
+                      }}
+                        style={{flex:2,padding:"10px 14px",borderRadius:13,border:"none",
+                          background:"linear-gradient(135deg,#D97706,#F59E0B)",
+                          color:"white",fontSize:12,fontWeight:800,cursor:"pointer",
+                          display:"flex",alignItems:"center",justifyContent:"center",gap:7,
+                          boxShadow:"0 4px 14px rgba(217,119,6,0.45)",
+                          animation:"gradientShift 4s ease infinite",backgroundSize:"200% 200%"}}>
+                        <GraduationCap size={15}/> View &amp; Download Certificate
+                      </button>
+                      <button onClick={()=>{
+                        if (onNavigate) {
+                          onNavigate("profile", "certificates");
+                        } else {
+                          try { localStorage.setItem("sl_profile_tab", "certificates"); } catch {}
+                          window.dispatchEvent(new CustomEvent("app-navigate", { detail: { tab: "profile", subTab: "certificates" } }));
+                        }
+                      }}
+                        title="View certificate in Profile Dashboard"
+                        style={{flex:1,padding:"10px 8px",borderRadius:13,border:"1px solid #CBD5E1",
+                          background:T.card,color:T.primary,fontSize:11,fontWeight:700,cursor:"pointer",
+                          display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                        Profile &rarr;
+                      </button>
+                    </div>
                   )}
 
 

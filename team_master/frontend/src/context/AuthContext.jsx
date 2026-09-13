@@ -72,8 +72,22 @@ const DEFAULT_PROFILE = {
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sl_auth_user");
+      return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
+    } catch {
+      return DEFAULT_PROFILE;
+    }
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sl_auth_user");
+      return !!saved || true; // Keep authenticated for internship demo
+    } catch {
+      return true;
+    }
+  });
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (message, type = 'success') => {
@@ -86,6 +100,7 @@ export function AuthProvider({ children }) {
     const loggedInUser = { ...DEFAULT_PROFILE, email: email || DEFAULT_PROFILE.email };
     setUser(loggedInUser);
     setIsAuthenticated(true);
+    try { localStorage.setItem("sl_auth_user", JSON.stringify(loggedInUser)); } catch {}
     showToast(`Welcome back, ${loggedInUser.fullName}!`);
     return true;
   };
@@ -102,12 +117,14 @@ export function AuthProvider({ children }) {
     };
     setUser(newUser);
     setIsAuthenticated(true);
+    try { localStorage.setItem("sl_auth_user", JSON.stringify(newUser)); } catch {}
     showToast(`Account created! Welcome, ${newUser.fullName}!`);
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    try { localStorage.removeItem("sl_auth_user"); } catch {}
     showToast('Logged out successfully', 'info');
   };
 
