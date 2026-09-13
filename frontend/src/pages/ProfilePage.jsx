@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { User, Mail, Award, Target, CheckCircle2, Edit2, Camera, Globe, BookOpen, Download, X, GraduationCap } from "lucide-react";
 
@@ -15,13 +15,23 @@ const GOALS = [
   {label:"90%+ Accuracy on HELLO",done:true,pct:94},
   {label:"Professional Vocabulary",done:false,pct:15},
 ];
+const E = {
+  fire: String.fromCodePoint(0x1F525),  // 🔥
+  hand: String.fromCodePoint(0x270B),   // ✋
+  dart: String.fromCodePoint(0x1F3AF),  // 🎯
+  book: String.fromCodePoint(0x1F4DA),  // 📚
+  trophy: String.fromCodePoint(0x1F3C6),// 🏆
+  bolt: String.fromCodePoint(0x26A1),   // ⚡
+  grad: String.fromCodePoint(0x1F393),  // 🎓
+  clip: String.fromCodePoint(0x1F4CB),  // 📋
+};
 const BADGES_BASE = [
-  {emoji:"ðŸ”¥",name:"7-Day Streak",desc:"Practiced 7 days in a row",earned:true},
-  {emoji:"âœ‹",name:"First Sign",desc:"Learned your first sign",earned:true},
-  {emoji:"ðŸŽ¯",name:"90% Accuracy",desc:"Hit 90%+ on any sign",earned:true},
-  {emoji:"ðŸ“š",name:"Course Complete",desc:"Finished a full course",earned:false},
-  {emoji:"ðŸ†",name:"Top 10",desc:"Reached leaderboard top 10",earned:false},
-  {emoji:"âš¡",name:"Speed Demon",desc:"Complete quiz in under 60s",earned:false},
+  {emoji:E.fire,  name:"7-Day Streak",   desc:"Practiced 7 days in a row",   earned:true},
+  {emoji:E.hand,  name:"First Sign",     desc:"Learned your first sign",     earned:true},
+  {emoji:E.dart,  name:"90% Accuracy",   desc:"Hit 90%+ on any sign",        earned:true},
+  {emoji:E.book,  name:"Course Complete",desc:"Finished a full course",       earned:false},
+  {emoji:E.trophy,name:"Top 10",         desc:"Reached leaderboard top 10",  earned:false},
+  {emoji:E.bolt,  name:"Speed Demon",    desc:"Complete quiz in under 60s",  earned:false},
 ];
 
 /* â”€â”€â”€ CERTIFICATE MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -211,7 +221,7 @@ export default function ProfilePage() {
   const BADGES  = BADGES_BASE.map(b=>b.name==="Course Complete"?{...b,earned:hasCert}:b);
   const STATS   = [
     {v:"11",   l:"Signs Mastered",c:T.primary,bg:"#EFF6FF"},
-    {v:"ðŸ”¥ 6", l:"Day Streak",    c:T.orange, bg:"#FFF7ED"},
+    {v:E.fire+" 6", l:"Day Streak",    c:T.orange, bg:"#FFF7ED"},
     {v:"79%",  l:"Avg Accuracy",  c:T.emerald,bg:"#ECFDF5"},
     {v:"42",   l:"Sessions",      c:T.violet, bg:"#F5F3FF"},
   ];
@@ -261,10 +271,10 @@ export default function ProfilePage() {
                 <span className="anim-pulse" style={{fontSize:11,fontWeight:700,padding:"3px 12px",borderRadius:999,
                   background:"rgba(255,255,255,0.22)",border:"1px solid rgba(255,255,255,0.35)"}}>{role}</span>
                 <span style={{fontSize:11,fontWeight:700,padding:"3px 12px",borderRadius:999,
-                  background:"rgba(255,255,255,0.18)",border:"1px solid rgba(255,255,255,0.3)"}}>â­ {level}</span>
+                  background:"rgba(255,255,255,0.18)",border:"1px solid rgba(255,255,255,0.3)"}}>&#x2B50; {level}</span>
                 {certs.length>0&&<span style={{fontSize:11,fontWeight:700,padding:"3px 12px",borderRadius:999,
                   background:"rgba(255,215,0,0.25)",border:"1px solid rgba(255,215,0,0.5)"}}>
-                  ðŸŽ“ {certs.length} Certificate{certs.length>1?"s":""}
+                  {E.grad} {certs.length} Certificate{certs.length>1?"s":""}
                 </span>}
               </div>
             </div>
@@ -293,8 +303,8 @@ export default function ProfilePage() {
         {/* â”€â”€ Tab nav â”€â”€ */}
         <div style={{display:"flex",gap:6,borderBottom:"1px solid "+T.border}}>
           {[
-            {id:"overview",     label:"ðŸ“‹ Overview"},
-            {id:"certificates", label:"ðŸŽ“ Certificates"+(certs.length>0?" ("+certs.length+")":"")},
+            {id:"overview",     label:"Overview"},
+            {id:"certificates", label:"Certificates"+(certs.length>0?" ("+certs.length+")":"")},
           ].map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)} style={{
               padding:"10px 20px",fontSize:12,fontWeight:700,border:"none",
@@ -380,7 +390,7 @@ export default function ProfilePage() {
                   <p style={{fontSize:11,fontWeight:800,color:b.earned?T.amber:T.muted,margin:0}}>{b.name}</p>
                   <p style={{fontSize:10,color:T.muted,marginTop:4,lineHeight:1.3}}>{b.desc}</p>
                   {b.earned&&<span style={{display:"inline-block",marginTop:6,fontSize:9,fontWeight:700,
-                    padding:"2px 8px",borderRadius:999,background:"#D97706",color:"white"}}>EARNED âœ“</span>}
+                    padding:"2px 8px",borderRadius:999,background:"#D97706",color:"white"}}>EARNED &#x2713;</span>}
                 </div>
               ))}
             </div>
@@ -392,7 +402,7 @@ export default function ProfilePage() {
           certs.length===0
             ?<div style={{background:T.card,border:"1px solid "+T.border,borderRadius:20,
                 padding:"52px 28px",textAlign:"center",boxShadow:"0 2px 12px rgba(15,23,42,0.06)"}}>
-                <div style={{fontSize:60,marginBottom:16}}>ðŸŽ“</div>
+                <div style={{fontSize:60,marginBottom:16}}>{E.grad}</div>
                 <p style={{fontSize:18,fontWeight:800,color:T.text,margin:"0 0 8px"}}>No Certificates Yet</p>
                 <p style={{fontSize:13,color:T.muted,maxWidth:360,margin:"0 auto 24px",lineHeight:1.6}}>
                   Complete all lessons in any course to earn your official<br/>
@@ -403,7 +413,7 @@ export default function ProfilePage() {
                   background:"linear-gradient(135deg,#0284C7,#7C3AED)",
                   color:"white",fontSize:13,fontWeight:700,textDecoration:"none",
                   boxShadow:"0 6px 18px rgba(2,132,199,0.35)"}}>
-                  ðŸ“š Go to Courses
+                  {E.book} Go to Courses
                 </a>
               </div>
             :<>
@@ -424,7 +434,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <span style={{fontSize:10,fontWeight:700,padding:"4px 12px",borderRadius:999,
-                    background:"#ECFDF5",color:T.emerald,border:"1px solid #A7F3D0"}}>ðŸŽ“ Official</span>
+                    background:"#ECFDF5",color:T.emerald,border:"1px solid #A7F3D0"}}>{E.grad} Official</span>
                 </div>
 
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(264px,1fr))",gap:16}}>
@@ -438,7 +448,7 @@ export default function ProfilePage() {
                         <div style={{position:"absolute",inset:0,
                           backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.12) 1px,transparent 1px)",
                           backgroundSize:"14px 14px"}}/>
-                        <div style={{fontSize:36,marginBottom:6,position:"relative"}}>ðŸ†</div>
+                        <div style={{fontSize:36,marginBottom:6,position:"relative"}}>{E.trophy}</div>
                         <p style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.75)",
                           textTransform:"uppercase",letterSpacing:2,margin:"0 0 4px",position:"relative"}}>
                           Certificate of Completion
