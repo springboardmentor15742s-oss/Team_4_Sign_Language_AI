@@ -1,0 +1,5 @@
+portfolio/node_modules/
+portfolio/dist/
+.DS_Store
+__pycache__/
+*.pyc

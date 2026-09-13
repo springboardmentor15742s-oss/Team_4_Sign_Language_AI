@@ -1,188 +1,73 @@
-﻿# 🚀 Deployment Guide — SignLearn AI
-## Team 4 | Infosys Springboard 2026
+﻿# Deployment Guide — SignLearn AI
+## How to Run the Full Stack Locally
 
 ---
 
 ## Prerequisites
-
-| Tool | Version | Install |
-|---|---|---|
-| Python | 3.10+ | https://python.org |
-| Node.js | 18+ | https://nodejs.org |
-| npm | 9+ | Bundled with Node |
-| Git | Latest | https://git-scm.com |
+- Python 3.11+
+- Node.js 18+
+- npm or yarn
 
 ---
 
-## Local Development Setup
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/your-org/Team_4_Sign_Language_AI.git
+## Step 1: Clone & Setup
+\\\ash
+git clone <repo-url>
 cd Team_4_Sign_Language_AI
-```
+\\\
 
-### 2. Backend Setup
-```bash
+## Step 2: Backend Setup
+\\\ash
 cd backend
+pip install fastapi uvicorn python-multipart pydantic
 pip install -r requirements.txt
-python -m uvicorn main:app --reload --port 8000
-```
-Backend runs at: http://localhost:8000
-API Docs (Swagger): http://localhost:8000/docs
+\\\
 
-### 3. Frontend Setup
-```bash
+## Step 3: Run Backend
+\\\ash
+# From project root:
+uvicorn backend.main:app --reload --port 8000
+# OR from backend/ directory:
+python main.py
+
+# API docs available at: http://localhost:8000/docs
+# Health check: http://localhost:8000/
+\\\
+
+## Step 4: Frontend Setup
+\\\ash
 cd frontend
 npm install
+\\\
+
+## Step 5: Run Frontend
+\\\ash
 npm run dev
-```
-Frontend runs at: http://localhost:5173
+# Open: http://localhost:5173
+\\\
 
-### 4. Demo Login Credentials
-```
-Email:    ankurbiswal1968@gmail.com
-Password: password123
-Role:     Learner (auto-detected)
-
-# For Instructor dashboard, register with role = INSTRUCTOR
-```
-
----
-
-## Environment Variables
-
-Create `backend/.env`:
-```env
-SECRET_KEY=your-secret-key-min-32-chars
-DATABASE_URL=sqlite:///./signlearn.db
-ML_MODEL_PATH=../ml/model/sign_classifier.pkl
-CORS_ORIGINS=http://localhost:5173
-```
-
-Create `frontend/.env`:
-```env
-VITE_API_BASE_URL=http://localhost:8000
-```
+## Step 6 (Optional): Train ML Model
+\\\ash
+cd ..  # back to project root
+pip install scikit-learn numpy pandas
+python ml/train_classifier.py
+# Model saved to: ml/model/sign_classifier.pkl
+\\\
 
 ---
 
-## Production Build
-
-### Frontend (Static)
-```bash
-cd frontend
-npm run build
-# Output: frontend/dist/ — serve with any static host
-```
-
-### Docker (Recommended)
-```dockerfile
-# backend/Dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-```dockerfile
-# frontend/Dockerfile
-FROM node:18-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
-```
-
-```yaml
-# docker-compose.yml
-version: "3.8"
-services:
-  backend:
-    build: ./backend
-    ports: ["8000:8000"]
-    environment:
-      - SECRET_KEY=change-me-in-production
-  frontend:
-    build: ./frontend
-    ports: ["80:80"]
-    depends_on: [backend]
-```
-
-Run with:
-```bash
-docker-compose up --build
-```
+## Environment Notes
+- Frontend → Backend: http://localhost:8000/api (auto-configured)
+- CORS: Allowed for all origins in development (change for production)
+- Camera: Required for AI Practice Studio (grant browser permission)
+- MediaPipe: Loaded via CDN (internet required for first load)
 
 ---
 
-## Cloud Deployment Options
-
-### Option A — Vercel (Frontend) + Railway (Backend)
-1. Push code to GitHub
-2. Connect `frontend/` to Vercel → auto-deploys on push
-3. Connect `backend/` to Railway → set env vars in dashboard
-4. Update `VITE_API_BASE_URL` in Vercel to Railway URL
-
-### Option B — AWS EC2
-```bash
-# On EC2 Ubuntu 22.04
-sudo apt update && sudo apt install -y python3-pip nodejs npm nginx
-# Clone repo, pip install, npm build
-# Configure nginx to proxy :8000 and serve /dist
-```
-
-### Option C — Render.com (Free Tier)
-1. Create Web Service for backend (Python, `uvicorn main:app --host 0.0.0.0 --port $PORT`)
-2. Create Static Site for frontend (`npm run build`, publish `dist/`)
-
----
-
-## ML Model Setup (Optional Enhancement)
-
-```bash
-cd ml
-pip install -r requirements_ml.txt
-python train_classifier.py
-# Generates: ml/model/sign_classifier.pkl
-```
-
-The backend automatically loads `sign_classifier.pkl` if present.
-Falls back to geometric classifier (MediaPipe landmarks) if not found.
-
----
-
-## Tech Stack Summary
-
-| Layer | Technology |
+## Demo Accounts (Role Switcher)
+Use the ⚡ RBAC Simulator button in the top navbar:
+| Role | Features Unlocked |
 |---|---|
-| Frontend | React 18, Vite 5, Lucide Icons |
-| Backend | FastAPI, Python 3.11, Uvicorn |
-| AI/ML | MediaPipe Hands (geometric), scikit-learn (optional) |
-| Auth | JWT (python-jose), bcrypt |
-| Database | SQLite (dev) / PostgreSQL (prod) |
-| Styling | Inline styles + custom animations.css |
-| Deployment | Docker / Vercel / Railway / Render |
-
----
-
-## Troubleshooting
-
-| Issue | Fix |
-|---|---|
-| `CORS error` | Add frontend URL to `CORS_ORIGINS` in `.env` |
-| `Camera not detected` | Allow browser camera permissions (HTTPS required in production) |
-| `MediaPipe slow` | Use Chrome or Edge (best WebAssembly support) |
-| `Port 8000 in use` | `kill $(lsof -t -i:8000)` or change port |
-| `npm install fails` | Run `npm cache clean --force` then retry |
-
----
-
-*Generated by SignLearn AI — Team 4 — Infosys Springboard 2026*
+| LEARNER | Dashboard, Practice, Quiz, Profile, History, Courses, Leaderboard |
+| INSTRUCTOR | + Instructor Dashboard (view all learners, add courses) |
+| ADMIN | All features + Auth & RBAC management |
