@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { BookOpen, Play, ChevronDown, ChevronUp, Clock, CheckCircle2, X, ExternalLink, Lock, Sparkles, Users, Star } from "lucide-react";
 
 const T = { bg:"#F8FAFC",card:"#FFFFFF",border:"#E2E8F0",primary:"#0284C7",orange:"#F97316",violet:"#7C3AED",emerald:"#059669",amber:"#D97706",text:"#0F172A",muted:"#64748B",soft:"#F1F5F9" };
@@ -150,29 +150,135 @@ function VideoModal({ lesson, course, onClose }) {
   );
 }
 
+// ── helpers ──────────────────────────────────────────────────────
+function loadLS(key, fallback) {
+  try { const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; } catch{ return fallback; }
+}
+function saveLS(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch{}
+}
+
+function CertBanner({ course, onClose, onView }) {
+  return (
+    <div className="anim-fade-in" style={{position:"fixed",inset:0,zIndex:300,
+      background:"rgba(10,15,28,0.78)",display:"flex",alignItems:"center",
+      justifyContent:"center",padding:20,backdropFilter:"blur(10px)"}}
+      onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="anim-scale-in" style={{background:"#fff",borderRadius:28,
+        maxWidth:480,width:"100%",overflow:"hidden",boxShadow:"0 40px 80px rgba(0,0,0,0.5)"}}>
+        {/* confetti header */}
+        <div style={{background:`linear-gradient(135deg,${course.color},#7C3AED)`,
+          padding:"32px 28px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",inset:0,
+            backgroundImage:"radial-gradient(circle,rgba(255,255,255,0.15) 1px,transparent 1px)",
+            backgroundSize:"18px 18px"}}/>
+          <div style={{fontSize:60,marginBottom:8,animation:"bounceEmoji 0.6s ease"}}>🏆</div>
+          <p style={{fontSize:22,fontWeight:800,color:"white",margin:"0 0 6px",position:"relative"}}>
+            Course Complete!
+          </p>
+          <p style={{fontSize:13,color:"rgba(255,255,255,0.85)",margin:0,position:"relative"}}>
+            You've finished every lesson in
+          </p>
+          <p style={{fontSize:15,fontWeight:800,color:"white",margin:"6px 0 0",position:"relative"}}>
+            "{course.title}"
+          </p>
+        </div>
+        {/* body */}
+        <div style={{padding:"24px 28px",textAlign:"center"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,
+            padding:"14px 18px",borderRadius:16,background:"#ECFDF5",border:"1px solid #A7F3D0",
+            marginBottom:20}}>
+            <span style={{fontSize:24}}>🎓</span>
+            <div style={{textAlign:"left"}}>
+              <p style={{fontSize:12,fontWeight:800,color:"#065F46",margin:0}}>Certificate Issued!</p>
+              <p style={{fontSize:11,color:"#059669",margin:0}}>
+                Available in your Profile → Certificates tab
+              </p>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={onClose}
+              style={{flex:1,padding:"11px",borderRadius:13,border:"1px solid #E2E8F0",
+                background:"#F8FAFC",fontSize:12,fontWeight:700,color:"#64748B",cursor:"pointer"}}>
+              Continue Learning
+            </button>
+            <button onClick={onView}
+              style={{flex:1,padding:"11px",borderRadius:13,border:"none",
+                background:`linear-gradient(135deg,${course.color},#7C3AED)`,
+                fontSize:12,fontWeight:800,color:"white",cursor:"pointer",
+                boxShadow:"0 6px 18px rgba(124,58,237,0.35)"}}>
+              View Certificate 🎓
+            </button>
+          </div>
+        </div>
+      </div>
+      <style>{`@keyframes bounceEmoji{0%{transform:scale(0.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}`}</style>
+    </div>
+  );
+}
+
 export default function CoursesPage() {
-  const [filter,   setFilter]   = useState("All");
-  const [expanded, setExpanded] = useState(null);
-  const [enrolled, setEnrolled] = useState(new Set(["c1"]));
-  const [modal,    setModal]    = useState(null);
-  const [progress, setProgress] = useState({"c1":{"0":true,"1":true,"2":true}});
-  const [mounted,  setMounted]  = useState(false);
-  const [hovered,  setHovered]  = useState(null);
+  const [filter,      setFilter]      = useState("All");
+  const [expanded,    setExpanded]    = useState(null);
+  const [enrolled,    setEnrolled]    = useState(()=>new Set(loadLS("sl_enrolled",["c1"])));
+  const [modal,       setModal]       = useState(null);
+  const [progress,    setProgress]    = useState(()=>loadLS("sl_progress",{"c1":{"0":true,"1":true,"2":true}}));
+  const [mounted,     setMounted]     = useState(false);
+  const [hovered,     setHovered]     = useState(null);
+  const [certBanner,  setCertBanner]  = useState(null); // course obj when just completed
+
   useEffect(()=>{ const t=setTimeout(()=>setMounted(true),80); return()=>clearTimeout(t); },[]);
+
+  // persist enrolled
+  useEffect(()=>{ saveLS("sl_enrolled",[...enrolled]); },[enrolled]);
+  // persist progress
+  useEffect(()=>{ saveLS("sl_progress",progress); },[progress]);
 
   const visible = filter==="All" ? COURSES : COURSES.filter(c=>c.level===filter);
   const getCourseProgress = (id,total) => Math.round((Object.keys(progress[id]||{}).length/total)*100);
   const markDone = (id,idx) => setProgress(p=>({...p,[id]:{...(p[id]||{}),[idx]:true}}));
-  const openLesson = (course,lesson,idx) => {
+  const openLesson = (course, lesson, idx) => {
     if(!enrolled.has(course.id)) setEnrolled(p=>{const n=new Set(p);n.add(course.id);return n;});
-    markDone(course.id,idx);
-    setModal({lesson,course});
+    // mark this lesson done then check for full completion
+    setProgress(prev => {
+      const updated = {...prev, [course.id]:{...(prev[course.id]||{}), [idx]:true}};
+      const doneCnt = Object.keys(updated[course.id]).length;
+      if(doneCnt >= course.items.length) {
+        // Issue certificate if not already issued
+        const certs = loadLS("sl_certificates", []);
+        const already = certs.find(c => c.courseId === course.id);
+        if(!already) {
+          const newCert = {
+            courseId: course.id,
+            title: course.title,
+            level: course.level,
+            color: course.color,
+            instructor: course.instructor,
+            issuedAt: new Date().toISOString(),
+            hrs: course.hrs,
+            lessons: course.lessons,
+          };
+          saveLS("sl_certificates", [...certs, newCert]);
+          // show banner after state settles
+          setTimeout(() => setCertBanner(course), 100);
+        }
+      }
+      saveLS("sl_progress", updated);
+      return updated;
+    });
+    setModal({lesson, course});
   };
 
   return (
     <div style={{background:T.bg,minHeight:"100vh",padding:"28px 0",
       backgroundImage:"radial-gradient(#CBD5E1 1px,transparent 1px)",backgroundSize:"28px 28px"}}>
       {modal&&<VideoModal lesson={modal.lesson} course={modal.course} onClose={()=>setModal(null)}/>}
+      {certBanner&&(
+        <CertBanner course={certBanner}
+          onClose={()=>setCertBanner(null)}
+          onView={()=>{ setCertBanner(null); window.location.href="/profile"; }}
+        />
+      )}
 
       <div style={{maxWidth:1120,margin:"0 auto",padding:"0 20px",display:"flex",flexDirection:"column",gap:20}}>
 
