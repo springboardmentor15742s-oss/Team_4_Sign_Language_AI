@@ -234,6 +234,25 @@ export default function CoursesPage() {
   // persist progress
   useEffect(()=>{ saveLS("sl_progress",progress); },[progress]);
 
+  // On mount: retroactively issue certs for any course already at 100% with no cert
+  useEffect(()=>{
+    const existing = loadLS("sl_certificates",[]);
+    const toAdd = [];
+    COURSES.forEach(course=>{
+      const doneCnt = Object.keys(progress[course.id]||{}).length;
+      if(doneCnt >= course.items.length && !existing.find(c=>c.courseId===course.id)) {
+        toAdd.push({
+          courseId:course.id, title:course.title, level:course.level,
+          color:course.color, instructor:course.instructor,
+          issuedAt:new Date().toISOString(),
+          hrs:course.hrs, lessons:course.items.length,
+        });
+      }
+    });
+    if(toAdd.length>0) saveLS("sl_certificates",[...existing,...toAdd]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   const visible = filter==="All" ? COURSES : COURSES.filter(c=>c.level===filter);
   const getCourseProgress = (id,total) => Math.round((Object.keys(progress[id]||{}).length/total)*100);
   const markDone = (id,idx) => setProgress(p=>({...p,[id]:{...(p[id]||{}),[idx]:true}}));
