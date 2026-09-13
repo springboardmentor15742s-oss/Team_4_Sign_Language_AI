@@ -485,7 +485,21 @@ export default function CoursesPage() {
                     </button>
                   </div>
 
-                  {/* Lesson list */}
+                  {/* Certificate shortcut — shows when course is 100% done */}
+                  {isEnrolled && pct===100 && (
+                    <button onClick={()=>window.location.href="/profile"}
+                      style={{width:"100%",padding:"9px",borderRadius:13,border:"none",
+                        background:"linear-gradient(135deg,#D97706,#F59E0B)",
+                        color:"white",fontSize:12,fontWeight:800,cursor:"pointer",
+                        display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+                        boxShadow:"0 4px 14px rgba(217,119,6,0.45)",
+                        marginBottom:isExpanded?14:0,
+                        animation:"gradientShift 4s ease infinite",backgroundSize:"200% 200%"}}>
+                      &#x1F393; View &amp; Download Certificate
+                    </button>
+                  )}
+
+
                   {isExpanded&&(
                     <div className="anim-fade-in" style={{borderTop:`1px solid ${T.border}`,paddingTop:14,
                       display:"flex",flexDirection:"column",gap:5}}>
